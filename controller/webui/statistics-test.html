@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Statistics Test</title>
+</head>
+<body>
+  <h1>Statistics API Test</h1>
+  <div id="result"></div>
+
+  <script>
+    async function testAPI() {
+      try {
+        const response = await fetch('/api/statistics/overview');
+        const data = await response.json();
+        document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+      } catch (error) {
+        document.getElementById('result').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+      }
+    }
+    
+    testAPI();
+  </script>
+</body>
+</html>

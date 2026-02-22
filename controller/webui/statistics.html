@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Purchase Statistics • NX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+          colors: {
+            base: { 900: '#0b0e14', 800: '#0f1420', 700: '#131a2a', 600: '#182139', 500: '#1e2a4a', 400: '#354c7c' }
+          },
+          boxShadow: {
+            glow: '0 10px 30px rgba(56, 189, 248, 0.15)',
+            card: '0 2px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
+          },
+          backdropBlur: { xs: '2px' }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body { height: 100%; }
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; }
+    .grad-text {
+      background: linear-gradient(90deg, #60a5fa, #22d3ee 35%, #a78bfa 70%, #f472b6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .panel { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
+    .btn { display:inline-flex; align-items:center; gap:.5rem; padding:.5rem 1rem; border-radius: .75rem; font-weight: 500; transition: .15s; border:1px solid; cursor: pointer; }
+    .btn-primary { border-color: rgba(34,211,238,.3); background: rgba(6,182,212,.12); color: #cffafe; }
+    .btn-primary:hover { background: rgba(6,182,212,.22); border-color: rgba(103,232,249,.45); box-shadow: 0 10px 30px rgba(56,189,248,.15); }
+    .btn-ghost { border-color: rgba(255,255,255,.12); color: rgba(255,255,255,.75); }
+    .btn-ghost:hover { background: rgba(255,255,255,.06); }
+    .input { width:100%; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:.75rem; padding:.5rem .75rem; color:#fff; outline:none; }
+    .input::placeholder { color: rgba(255,255,255,.4); }
+    .input:focus { border-color: rgba(34,211,238,.4); }
+    .kpi-card { padding:1.25rem; }
+    .stat-value { font-size: 1.875rem; font-weight: 700; line-height: 1; }
+    .stat-label { font-size: 0.875rem; color: rgba(255,255,255,.6); margin-top: 0.5rem; }
+    .rating-stars { display: inline-flex; gap: 0.25rem; }
+    .star { color: #fbbf24; font-size: 1rem; }
+    .star.empty { color: rgba(255,255,255,.2); }
+    .item-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 1rem; align-items: center; padding: 1rem; border-bottom: 1px solid rgba(255,255,255,.05); }
+    .item-row:last-child { border-bottom: none; }
+    .item-name { font-weight: 500; color: #fff; }
+    .item-stat { text-align: right; }
+    .stat-positive { color: #4ade80; }
+    .stat-negative { color: #f87171; }
+    .stat-neutral { color: rgba(255,255,255,.7); }
+    .loading-spinner { display: inline-block; width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="min-h-screen bg-base-900 text-white relative overflow-x-hidden selection:bg-cyan-500/30 selection:text-white">
+  <div class="pointer-events-none fixed inset-0">
+    <video class="absolute inset-0 w-full h-full object-cover opacity-20" autoplay muted loop playsinline>
+      <source src="./bg-anime.mp4" type="video/mp4" />
+    </video>
+    <div class="absolute -top-40 -left-40 w-[50rem] h-[50rem] bg-cyan-500/10 blur-[120px] rounded-full"></div>
+    <div class="absolute -bottom-40 -right-40 w-[50rem] h-[50rem] bg-fuchsia-500/10 blur-[120px] rounded-full"></div>
+  </div>
+
+  <div class="relative">
+    <header class="sticky top-0 z-30 backdrop-blur-xs bg-base-900/70 border-b border-white/10">
+      <div class="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400/30 to-fuchsia-400/30 border border-white/15 grid place-items-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M3 3v18h18" stroke="currentColor" class="text-cyan-300" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 15l3-4 4 5 5-7" stroke="currentColor" class="text-fuchsia-300/80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-sm text-white/60">Analytics</div>
+            <div class="text-xl font-semibold grad-text">Purchase Statistics</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="realtimeToggle" class="btn btn-ghost">
+            <span id="realtimeIcon">🔴</span>
+            <span id="realtimeText">Real-time: OFF</span>
+          </button>
+          <button id="refreshBtn" class="btn btn-primary">🔄 Refresh</button>
+          <a href="/" class="btn btn-ghost">← Back</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-6 py-8">
+      <div id="app-root"></div>
+    </main>
+
+    <footer class="mx-auto max-w-7xl px-6 py-10 text-center text-xs text-white/40">
+      © <span id="year"></span> cyclel1ves • vNX
+    </footer>
+  </div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+  <script type="text/babel">
+    const { useEffect, useState, useCallback, useRef } = React;
+
+    function formatCurrency(value) {
+      if (value === null || value === undefined) return '—';
+      return value.toLocaleString('ru-RU');
+    }
+
+    function formatPercentage(value) {
+      if (value === null || value === undefined) return '—';
+      return (value * 100).toFixed(1) + '%';
+    }
+
+    function RatingStars({ rating }) {
+      const stars = [];
+      const fullStars = Math.floor(rating);
+      const hasHalfStar = rating % 1 >= 0.5;
+      
+      for (let i = 0; i < 5; i++) {
+        if (i < fullStars) {
+          stars.push(<span key={i} className="star">★</span>);
+        } else if (i === fullStars && hasHalfStar) {
+          stars.push(<span key={i} className="star">⯨</span>);
+        } else {
+          stars.push(<span key={i} className="star empty">☆</span>);
+        }
+      }
+      
+      return <div className="rating-stars">{stars}</div>;
+    }
+
+    function KPICard({ title, value, icon }) {
+      return (
+        <div className="panel kpi-card">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="stat-label">{title}</div>
+              <div className="stat-value">{value}</div>
+            </div>
+            {icon && <div className="text-2xl opacity-50">{icon}</div>}
+          </div>
+        </div>
+      );
+    }
+
+
+    function StatisticsDashboard() {
+      const [overallStats, setOverallStats] = useState(null);
+      const [topItems, setTopItems] = useState([]);
+      const [allItems, setAllItems] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [sortBy, setSortBy] = useState('rating');
+      const [selectedItem, setSelectedItem] = useState(null);
+      const [itemDetails, setItemDetails] = useState(null);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [timePeriod, setTimePeriod] = useState('all');
+      const [customStartDate, setCustomStartDate] = useState('');
+      const [customEndDate, setCustomEndDate] = useState('');
+      const [realtimeEnabled, setRealtimeEnabled] = useState(true);
+      const [lastUpdate, setLastUpdate] = useState(null);
+      const socketRef = useRef(null);
+
+      const loadStatistics = useCallback(async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          
+          // Build API URLs based on time period filter
+          let overallUrl = '/api/statistics/overview';
+          let topUrl = `/api/statistics/top-items?criteria=${sortBy}&limit=10`;
+          
+          // Apply time period filter if not 'all'
+          if (timePeriod !== 'all') {
+            const now = new Date();
+            let startDate, endDate = now.toISOString();
+            
+            switch (timePeriod) {
+              case 'today':
+                startDate = new Date(now.setHours(0, 0, 0, 0)).toISOString();
+                break;
+              case 'week':
+                startDate = new Date(now.setDate(now.getDate() - 7)).toISOString();
+                break;
+              case 'month':
+                startDate = new Date(now.setMonth(now.getMonth() - 1)).toISOString();
+                break;
+              case 'custom':
+                if (customStartDate && customEndDate) {
+                  startDate = new Date(customStartDate).toISOString();
+                  endDate = new Date(customEndDate).toISOString();
+                } else {
+                  // If custom dates not set, fall back to all time
+                  startDate = null;
+                }
+                break;
+            }
+            
+            if (startDate) {
+              const periodUrl = `/api/statistics/period?startDate=${startDate}&endDate=${endDate}`;
+              const periodRes = await fetch(periodUrl);
+              const periodData = await periodRes.json();
+              
+              if (periodData.success) {
+                setOverallStats({
+                  totalPurchases: periodData.data.totalPurchases || 0,
+                  totalSales: periodData.data.totalSales || 0,
+                  totalProfit: periodData.data.totalProfit || 0,
+                  averageSuccessRate: periodData.data.averageSuccessRate || 0
+                });
+                
+                // Sort items from period data
+                const sortedItems = [...(periodData.data.items || [])].sort((a, b) => {
+                  switch (sortBy) {
+                    case 'rating': return (b.rating || 0) - (a.rating || 0);
+                    case 'profit': return (b.profit || 0) - (a.profit || 0);
+                    case 'purchases': return (b.purchases || 0) - (a.purchases || 0);
+                    case 'successRate': return (b.successRate || 0) - (a.successRate || 0);
+                    default: return 0;
+                  }
+                }).slice(0, 10);
+                
+                setTopItems(sortedItems);
+              }
+              
+              // Still load all items for the search functionality
+              const itemsRes = await fetch('/api/items');
+              const itemsData = await itemsRes.json();
+              if (itemsData.success) setAllItems(itemsData.items || []);
+              
+              setLoading(false);
+              return;
+            }
+          }
+          
+          // Default: load all-time statistics
+          const [overallRes, topRes, itemsRes] = await Promise.all([
+            fetch(overallUrl),
+            fetch(topUrl),
+            fetch('/api/items')
+          ]);
+          
+          const [overallData, topData, itemsData] = await Promise.all([
+            overallRes.json(),
+            topRes.json(),
+            itemsRes.json()
+          ]);
+          
+          if (overallData.success) setOverallStats(overallData.data);
+          if (topData.success) setTopItems(topData.data.items || topData.data);
+          if (itemsData.success) setAllItems(itemsData.items || []);
+        } catch (err) {
+          setError(err.message);
+          console.error('Error loading statistics:', err);
+        } finally {
+          setLoading(false);
+        }
+      }, [sortBy, timePeriod, customStartDate, customEndDate]);
+
+      const loadItemDetails = useCallback(async (itemId) => {
+        try {
+          const response = await fetch(`/api/statistics/items/${itemId}`);
+          const data = await response.json();
+          
+          if (data.success) {
+            setItemDetails(data.data);
+            setSelectedItem(itemId);
+          }
+        } catch (err) {
+          console.error('Error loading item details:', err);
+        }
+      }, []);
+
+      useEffect(() => {
+        loadStatistics();
+        
+        // Initialize WebSocket connection for real-time updates
+        if (realtimeEnabled && !socketRef.current) {
+          console.log('[WebSocket] Connecting to server...');
+          socketRef.current = io({
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionAttempts: 5
+          });
+          
+          socketRef.current.on('connect', () => {
+            console.log('[WebSocket] Connected successfully');
+          });
+          
+          socketRef.current.on('disconnect', () => {
+            console.log('[WebSocket] Disconnected from server');
+          });
+          
+          socketRef.current.on('connect_error', (error) => {
+            console.error('[WebSocket] Connection error:', error);
+          });
+          
+          // Listen for statistics updates
+          socketRef.current.on('statisticsUpdated', (data) => {
+            console.log('[WebSocket] Statistics updated:', data);
+            setLastUpdate({
+              type: data.type,
+              itemName: data.itemName || data.itemId,
+              timestamp: new Date().toISOString()
+            });
+            
+            // Reload statistics to reflect the update
+            // Use a small delay to ensure backend has processed the update
+            setTimeout(() => {
+              loadStatistics();
+            }, 500);
+          });
+        }
+        
+        // Cleanup WebSocket connection on unmount
+        return () => {
+          if (socketRef.current) {
+            console.log('[WebSocket] Disconnecting...');
+            socketRef.current.disconnect();
+            socketRef.current = null;
+          }
+        };
+      }, [loadStatistics, realtimeEnabled]);
+
+      useEffect(() => {
+        const refreshBtn = document.getElementById('refreshBtn');
+        const realtimeToggle = document.getElementById('realtimeToggle');
+        const realtimeIcon = document.getElementById('realtimeIcon');
+        const realtimeText = document.getElementById('realtimeText');
+        
+        const handleRefresh = () => loadStatistics();
+        
+        const handleRealtimeToggle = () => {
+          setRealtimeEnabled(prev => {
+            const newValue = !prev;
+            if (realtimeIcon && realtimeText) {
+              realtimeIcon.textContent = newValue ? '🟢' : '🔴';
+              realtimeText.textContent = `Real-time: ${newValue ? 'ON' : 'OFF'}`;
+            }
+            return newValue;
+          });
+        };
+        
+        // Initialize real-time button state
+        if (realtimeIcon && realtimeText) {
+          realtimeIcon.textContent = realtimeEnabled ? '🟢' : '🔴';
+          realtimeText.textContent = `Real-time: ${realtimeEnabled ? 'ON' : 'OFF'}`;
+        }
+        
+        if (refreshBtn) {
+          refreshBtn.addEventListener('click', handleRefresh);
+        }
+        
+        if (realtimeToggle) {
+          realtimeToggle.addEventListener('click', handleRealtimeToggle);
+        }
+        
+        return () => {
+          if (refreshBtn) {
+            refreshBtn.removeEventListener('click', handleRefresh);
+          }
+          if (realtimeToggle) {
+            realtimeToggle.removeEventListener('click', handleRealtimeToggle);
+          }
+        };
+      }, [loadStatistics, realtimeEnabled]);
+
+      if (loading && !overallStats) {
+        return (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="loading-spinner mx-auto mb-4"></div>
+              <div className="text-white/60">Loading statistics...</div>
+            </div>
+          </div>
+        );
+      }
+
+      if (error && !overallStats) {
+        return (
+          <div className="panel p-6 border-red-400/30 bg-red-500/10">
+            <div className="text-red-400 font-medium">Error loading statistics</div>
+            <div className="text-red-400/80 text-sm mt-2">{error}</div>
+            <button onClick={loadStatistics} className="btn btn-primary mt-4">
+              Retry
+            </button>
+          </div>
+        );
+      }
+
+      const filteredItems = allItems.filter(item => 
+        !searchQuery || 
+        (item.displayName && item.displayName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.name && item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+
+      return (
+        <div className="space-y-6">
+          {/* Real-time Status Indicator */}
+          {lastUpdate && realtimeEnabled && (
+            <div className="panel p-4 border-cyan-400/30 bg-cyan-500/10 animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+                  <div>
+                    <div className="text-cyan-300 font-medium">
+                      {lastUpdate.type === 'purchase' && '🛒 New Purchase'}
+                      {lastUpdate.type === 'sale' && '💰 New Sale'}
+                      {lastUpdate.type === 'missed_purchase' && '❌ Missed Purchase'}
+                    </div>
+                    <div className="text-cyan-400/80 text-sm mt-1">
+                      {lastUpdate.itemName} • {new Date(lastUpdate.timestamp).toLocaleTimeString('ru-RU')}
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setLastUpdate(null)} 
+                  className="text-cyan-400/60 hover:text-cyan-400 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Time Period Filter */}
+          <div className="panel p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex-1 min-w-[200px]">
+                <label className="text-sm text-white/60 block mb-2">Time Period</label>
+                <select value={timePeriod} onChange={(e) => setTimePeriod(e.target.value)} className="input">
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+              </div>
+              
+              {timePeriod === 'custom' && (
+                <>
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="text-sm text-white/60 block mb-2">Start Date</label>
+                    <input 
+                      type="datetime-local" 
+                      value={customStartDate} 
+                      onChange={(e) => setCustomStartDate(e.target.value)} 
+                      className="input"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="text-sm text-white/60 block mb-2">End Date</label>
+                    <input 
+                      type="datetime-local" 
+                      value={customEndDate} 
+                      onChange={(e) => setCustomEndDate(e.target.value)} 
+                      className="input"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button onClick={loadStatistics} className="btn btn-primary">
+                      Apply Filter
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {overallStats && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <KPICard title="Total Purchases" value={formatCurrency(overallStats.totalPurchases)} icon="🛒" />
+              <KPICard title="Total Sales" value={formatCurrency(overallStats.totalSales)} icon="💰" />
+              <KPICard title="Total Profit" value={formatCurrency(overallStats.totalProfit)} icon="📈" />
+              <KPICard title="Success Rate" value={formatPercentage(overallStats.averageSuccessRate)} icon="✅" />
+            </div>
+          )}
+
+          <div className="panel">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Top Items</h2>
+              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="input text-sm w-auto">
+                <option value="rating">By Rating</option>
+                <option value="profit">By Profit</option>
+                <option value="purchases">By Purchases</option>
+                <option value="successRate">By Success Rate</option>
+              </select>
+            </div>
+            
+            <div className="p-4">
+              {topItems.length === 0 ? (
+                <div className="text-center text-white/50 py-8">No items found</div>
+              ) : (
+                <div className="space-y-2">
+                  {topItems.map((item, index) => (
+                    <div key={item.itemId} className="item-row hover:bg-white/5 rounded-lg transition-colors cursor-pointer" onClick={() => loadItemDetails(item.itemId)}>
+                      <div className="flex items-center gap-3">
+                        <div className="text-white/40 font-mono text-sm">#{index + 1}</div>
+                        <div>
+                          <div className="item-name">{item.itemName}</div>
+                          <RatingStars rating={item.rating || 0} />
+                        </div>
+                      </div>
+                      <div className="item-stat">
+                        <div className="text-white/90">{formatCurrency(item.totalPurchases)}</div>
+                        <div className="text-xs text-white/50">purchases</div>
+                      </div>
+                      <div className="item-stat">
+                        <div className="text-white/90">{formatCurrency(item.totalSales)}</div>
+                        <div className="text-xs text-white/50">sales</div>
+                      </div>
+                      <div className="item-stat">
+                        <div className={item.totalProfit >= 0 ? 'stat-positive' : 'stat-negative'}>
+                          {formatCurrency(item.totalProfit)}
+                        </div>
+                        <div className="text-xs text-white/50">profit</div>
+                      </div>
+                      <div className="item-stat">
+                        <div className="text-white/90">{formatPercentage(item.successRate)}</div>
+                        <div className="text-xs text-white/50">success</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="panel">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">All Items ({allItems.length})</h2>
+              <input type="text" placeholder="Search items..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="input text-sm w-64" />
+            </div>
+            
+            <div className="p-4 max-h-[600px] overflow-y-auto">
+              {filteredItems.length === 0 ? (
+                <div className="text-center text-white/50 py-8">No items found</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filteredItems.map((item) => (
+                    <div key={item.id} className="panel p-3 flex items-center justify-between hover:bg-white/5 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-white truncate">{item.displayName || item.name}</div>
+                        <div className="text-xs text-white/50 mt-1">
+                          {item.buyPrice ? `Buy: ${formatCurrency(item.buyPrice)}` : 'No price'}
+                          {item.sellPrice && ` | Sell: ${formatCurrency(item.sellPrice)}`}
+                        </div>
+                      </div>
+                      <div className={`text-xs font-medium px-2 py-1 rounded ${item.enabled ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                        {item.enabled ? 'Enabled' : 'Disabled'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {selectedItem && itemDetails && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setSelectedItem(null); setItemDetails(null); }}>
+              <div className="panel max-w-3xl w-full max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-base-800/95 backdrop-blur-sm z-10">
+                  <div>
+                    <h2 className="text-xl font-semibold">{itemDetails.itemName}</h2>
+                    <div className="mt-2 flex items-center gap-3">
+                      <RatingStars rating={itemDetails.rating || 0} />
+                      <span className="text-sm text-white/60">({(itemDetails.rating || 0).toFixed(2)})</span>
+                    </div>
+                  </div>
+                  <button onClick={() => { setSelectedItem(null); setItemDetails(null); }} className="text-white/50 hover:text-white/80 transition-colors text-2xl">✕</button>
+                </div>
+                
+                <div className="p-6 space-y-6">
+                  {/* Main Statistics Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="panel p-4">
+                      <div className="text-sm text-white/60">Purchases</div>
+                      <div className="text-2xl font-semibold mt-1">{formatCurrency(itemDetails.totalPurchases)}</div>
+                    </div>
+                    <div className="panel p-4">
+                      <div className="text-sm text-white/60">Sales</div>
+                      <div className="text-2xl font-semibold mt-1">{formatCurrency(itemDetails.totalSales)}</div>
+                    </div>
+                    <div className="panel p-4">
+                      <div className="text-sm text-white/60">Total Profit</div>
+                      <div className={`text-2xl font-semibold mt-1 ${itemDetails.totalProfit >= 0 ? 'stat-positive' : 'stat-negative'}`}>
+                        {formatCurrency(itemDetails.totalProfit)}
+                      </div>
+                    </div>
+                    <div className="panel p-4">
+                      <div className="text-sm text-white/60">Success Rate</div>
+                      <div className="text-2xl font-semibold mt-1">{formatPercentage(itemDetails.successRate)}</div>
+                    </div>
+                  </div>
+
+                  {/* Profit Details */}
+                  <div className="panel p-4">
+                    <h3 className="text-lg font-semibold mb-4">Profit Analysis</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm text-white/60">Average Profit</div>
+                        <div className="text-xl font-semibold mt-1 stat-positive">{formatCurrency(itemDetails.averageProfit || 0)}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-white/60">Profit Margin</div>
+                        <div className="text-xl font-semibold mt-1">{formatPercentage(itemDetails.profitMargin || 0)}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Missed Purchases */}
+                  {itemDetails.missedPurchases && itemDetails.missedPurchases.total > 0 && (
+                    <div className="panel p-4">
+                      <h3 className="text-lg font-semibold mb-4">Missed Purchases</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-white/70">Total Missed</span>
+                          <span className="font-semibold stat-negative">{itemDetails.missedPurchases.total}</span>
+                        </div>
+                        {itemDetails.missedPurchases.reasons && (
+                          <div className="space-y-2 mt-3 pt-3 border-t border-white/10">
+                            <div className="text-sm text-white/60 mb-2">Reasons:</div>
+                            {Object.entries(itemDetails.missedPurchases.reasons).map(([reason, count]) => (
+                              <div key={reason} className="flex items-center justify-between text-sm">
+                                <span className="text-white/70 capitalize">{reason.replace(/_/g, ' ')}</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Last Activity */}
+                  {itemDetails.lastActivity && (
+                    <div className="panel p-4">
+                      <div className="text-sm text-white/60">Last Activity</div>
+                      <div className="text-lg font-medium mt-1">
+                        {new Date(itemDetails.lastActivity).toLocaleString('ru-RU', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function App() {
+      useEffect(() => {
+        document.getElementById('year').textContent = new Date().getFullYear();
+      }, []);
+
+      return <StatisticsDashboard />;
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('app-root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

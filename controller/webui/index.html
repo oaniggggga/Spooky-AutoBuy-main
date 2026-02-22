@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bot Monitor • NX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+          colors: {
+            base: { 900: '#0b0e14', 800: '#0f1420', 700: '#131a2a', 600: '#182139', 500: '#1e2a4a', 400: '#354c7c' }
+          },
+          boxShadow: {
+            glow: '0 10px 30px rgba(56, 189, 248, 0.15)',
+            card: '0 2px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03)'
+          },
+          backdropBlur: { xs: '2px' }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body { height: 100%; }
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; }
+    .grad-text {
+      background: linear-gradient(90deg, #60a5fa, #22d3ee 35%, #a78bfa 70%, #f472b6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .panel { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03); backdrop-filter: blur(6px); }
+    .btn { display:inline-flex; align-items:center; gap:.5rem; padding:.5rem 1rem; border-radius: .75rem; font-weight: 500; transition: .15s; border:1px solid; }
+    .btn-primary { border-color: rgba(34,211,238,.3); background: rgba(6,182,212,.12); color: #cffafe; }
+    .btn-primary:hover { background: rgba(6,182,212,.22); border-color: rgba(103,232,249,.45); box-shadow: 0 10px 30px rgba(56,189,248,.15); }
+    .btn-ghost { border-color: rgba(255,255,255,.12); color: rgba(255,255,255,.75); }
+    .btn-ghost:hover { background: rgba(255,255,255,.06); }
+    .input { width:100%; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:.75rem; padding:.5rem .75rem; color:#fff; outline:none; }
+    .input::placeholder { color: rgba(255,255,255,.4); }
+    .input:focus { border-color: rgba(34,211,238,.4); }
+    .kpi-card { padding:1.25rem; }
+    .tag { display:inline-flex; align-items:center; border-radius:.5rem; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); padding:.25rem .625rem; font-size:.75rem; color: rgba(255,255,255,.75); }
+    .dot { width:.5rem; height:.5rem; border-radius:999px; }
+  </style>
+</head>
+<body class="min-h-screen bg-base-900 text-white relative overflow-x-hidden selection:bg-cyan-500/30 selection:text-white">
+  <div class="pointer-events-none fixed inset-0">
+    <video class="absolute inset-0 w-full h-full object-cover opacity-20" autoplay muted loop playsinline>
+      <source src="./bg-anime.mp4" type="video/mp4" />
+    </video>
+    <div class="absolute -top-40 -left-40 w-[50rem] h-[50rem] bg-cyan-500/10 blur-[120px] rounded-full"></div>
+    <div class="absolute -bottom-40 -right-40 w-[50rem] h-[50rem] bg-fuchsia-500/10 blur-[120px] rounded-full"></div>
+  </div>
+
+  <div class="relative">
+    <header class="sticky top-0 z-30 backdrop-blur-xs bg-base-900/70 border-b border-white/10">
+      <div class="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400/30 to-fuchsia-400/30 border border-white/15 grid place-items-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3l9 5-9 5-9-5 9-5z" stroke="currentColor" class="text-cyan-300" stroke-width="1.5"/>
+              <path d="M21 12l-9 5-9-5" stroke="currentColor" class="text-fuchsia-300/80" stroke-width="1.5"/>
+              <path d="M12 22V13" stroke="currentColor" class="text-white/70" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div>
+            <div class="text-sm text-white/60">Control Panel</div>
+            <div class="text-xl font-semibold grad-text">Bot Monitor • NX</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="/statistics.html" class="btn-primary">📊 Статистика</a>
+          <button id="toggleAnon" class="btn-ghost">🙈 Скрыть баланс</button>
+          <button id="toggleList" class="btn-ghost">Список ботов</button>
+          <a class="btn-primary" href="#" onclick="location.reload()">Обновить</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-6 py-8">
+      <div id="app-root"></div>
+    </main>
+
+    <footer class="mx-auto max-w-7xl px-6 py-10 text-center text-xs text-white/40">
+      © <span id="year"></span> cyclel1ves • vNX
+    </footer>
+  </div>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+  <script type="text/babel">
+    const { useEffect, useState, useMemo, useCallback, useRef } = React;
+
+    // Error Handling Utilities
+    
+    class ApiError extends Error {
+      constructor(message, status, response) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+        this.response = response;
+      }
+    }
+
+    // Retry utility with exponential backoff
+    async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+      let lastError;
+      
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          return await fn();
+        } catch (error) {
+          lastError = error;
+          
+          if (attempt === maxRetries) {
+            throw error;
+          }
+          
+          // Exponential backoff: 1s, 2s, 4s
+          const delay = baseDelay * Math.pow(2, attempt);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+      
+      throw lastError;
+    }
+
+    // Enhanced fetch with retry logic and better error handling
+    async function apiRequest(url, options = {}) {
+      return retryWithBackoff(async () => {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+          }
+        });
+        
+        if (!response.ok) {
+          let errorMessage = `HTTP ${response.status}`;
+          let errorData = null;
+          
+          try {
+            errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            // If response is not JSON, use status text
+            errorMessage = response.statusText || errorMessage;
+          }
+          
+          throw new ApiError(errorMessage, response.status, errorData);
+        }
+        
+        return response.json();
+      }, 3, 1000);
+    }
+
+    // Notification System
+    function NotificationContainer({ notifications, onRemove }) {
+      return (
+        <div className="fixed top-4 right-4 z-50 space-y-2">
+          {notifications.map(notification => (
+            <Notification 
+              key={notification.id} 
+              notification={notification} 
+              onRemove={onRemove}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    function Notification({ notification, onRemove }) {
+      const { id, type, title, message, autoClose = true } = notification;
+      
+      useEffect(() => {
+        if (autoClose) {
+          const timer = setTimeout(() => onRemove(id), 5000);
+          return () => clearTimeout(timer);
+        }
+      }, [id, autoClose, onRemove]);
+      
+      const getTypeStyles = () => {
+        switch (type) {
+          case 'error':
+            return 'border-red-400/30 bg-red-500/10 text-red-400';
+          case 'success':
+            return 'border-green-400/30 bg-green-500/10 text-green-400';
+          case 'warning':
+            return 'border-yellow-400/30 bg-yellow-500/10 text-yellow-400';
+          default:
+            return 'border-blue-400/30 bg-blue-500/10 text-blue-400';
+        }
+      };
+      
+      const getIcon = () => {
+        switch (type) {
+          case 'error':
+            return '❌';
+          case 'success':
+            return '✅';
+          case 'warning':
+            return '⚠️';
+          default:
+            return 'ℹ️';
+        }
+      };
+      
+      return (
+        <div className={`panel p-4 min-w-[300px] max-w-[400px] ${getTypeStyles()}`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2">
+              <span className="text-lg">{getIcon()}</span>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium">{title}</div>
+                {message && (
+                  <div className="text-sm opacity-80 mt-1">{message}</div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => onRemove(id)}
+              className="text-white/50 hover:text-white/80 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Custom hook for notifications
+    function useNotifications() {
+      const [notifications, setNotifications] = useState([]);
+      
+      const addNotification = useCallback((notification) => {
+        const id = Date.now() + Math.random();
+        setNotifications(prev => [...prev, { ...notification, id }]);
+        return id;
+      }, []);
+      
+      const removeNotification = useCallback((id) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }, []);
+      
+      const showError = useCallback((title, message) => {
+        return addNotification({ type: 'error', title, message });
+      }, [addNotification]);
+      
+      const showSuccess = useCallback((title, message) => {
+        return addNotification({ type: 'success', title, message });
+      }, [addNotification]);
+      
+      const showWarning = useCallback((title, message) => {
+        return addNotification({ type: 'warning', title, message });
+      }, [addNotification]);
+      
+      const showInfo = useCallback((title, message) => {
+        return addNotification({ type: 'info', title, message });
+      }, [addNotification]);
+      
+      return {
+        notifications,
+        addNotification,
+        removeNotification,
+        showError,
+        showSuccess,
+        showWarning,
+        showInfo
+      };
+    }
+
+    // Network status hook
+    function useNetworkStatus() {
+      const [isOnline, setIsOnline] = useState(navigator.onLine);
+      
+      useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        
+        return () => {
+          window.removeEventListener('online', handleOnline);
+          window.removeEventListener('offline', handleOffline);
+        };
+      }, []);
+      
+      return isOnline;
+    }
+
+    // Item Management Components
+
+    function ItemIcon({ itemName, size = 32 }) {
+      const [iconError, setIconError] = useState(false);
+      const [isLoading, setIsLoading] = useState(true);
+      const [retryCount, setRetryCount] = useState(0);
+      const maxRetries = 2;
+      
+      const iconUrl = `/api/items/icons/${encodeURIComponent(itemName)}`;
+      
+      const handleImageLoad = () => {
+        setIsLoading(false);
+        setIconError(false);
+      };
+      
+      const handleImageError = () => {
+        setIsLoading(false);
+        if (retryCount < maxRetries) {
+          // Retry loading the image after a short delay
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            setIconError(false);
+            setIsLoading(true);
+          }, 1000 * (retryCount + 1)); // Increasing delay: 1s, 2s
+        } else {
+          setIconError(true);
+        }
+      };
+      
+      // Reset retry count when itemName changes
+      useEffect(() => {
+        setRetryCount(0);
+        setIconError(false);
+        setIsLoading(true);
+      }, [itemName]);
+      
+      if (iconError) {
+        return (
+          <div 
+            className="bg-gray-600 rounded flex items-center justify-center text-white/60 border border-white/10"
+            style={{ width: size, height: size }}
+            title={`Иконка для ${itemName} недоступна`}
+          >
+            <svg width={size/2} height={size/2} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+          </div>
+        );
+      }
+      
+      return (
+        <div className="relative" style={{ width: size, height: size }}>
+          {isLoading && (
+            <div 
+              className="absolute inset-0 bg-gray-700 rounded flex items-center justify-center"
+              style={{ width: size, height: size }}
+            >
+              <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full"></div>
+            </div>
+          )}
+          <img 
+            src={`${iconUrl}?retry=${retryCount}`}
+            alt={itemName}
+            width={size}
+            height={size}
+            className={`rounded transition-opacity ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            style={{ display: iconError ? 'none' : 'block' }}
+          />
+        </div>
+      );
+    }
+
+    function StatusToggle({ enabled, loading, onChange, disabled = false }) {
+      const [localLoading, setLocalLoading] = useState(false);
+      
+      const handleClick = async () => {
+        if (disabled || loading || localLoading) return;
+        
+        setLocalLoading(true);
+        try {
+          await onChange();
+        } catch (error) {
+          // Error handling is done in parent component
+          console.error('Status toggle error:', error);
+        } finally {
+          setLocalLoading(false);
+        }
+      };
+      
+      const isDisabled = disabled || loading || localLoading;
+      
+      return (
+        <button
+          onClick={handleClick}
+          disabled={isDisabled}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-base-900 ${
+            enabled ? 'bg-cyan-600' : 'bg-gray-600'
+          } ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
+          title={isDisabled ? 'Обновление...' : (enabled ? 'Отключить предмет' : 'Включить предмет')}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              enabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+          {(loading || localLoading) && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-3 h-3 border border-white/60 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+        </button>
+      );
+    }
+
+    function PriceDisplay({ item, priceUpdate }) {
+      const formatPrice = (price) => {
+        if (price === null || price === undefined) return '—';
+        return price.toLocaleString('ru-RU');
+      };
+
+      const getPriceChangeClass = (priceUpdate, priceType) => {
+        if (!priceUpdate || !priceUpdate[priceType]) return '';
+        const change = priceUpdate[priceType];
+        if (change > 0) return 'text-green-400';
+        if (change < 0) return 'text-red-400';
+        return '';
+      };
+
+      return (
+        <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+          <div>
+            <div className="text-white/50">Покупка</div>
+            <div className={`font-medium ${getPriceChangeClass(priceUpdate, 'buyPrice')}`}>
+              {formatPrice(item.buyPrice)}
+            </div>
+          </div>
+          <div>
+            <div className="text-white/50">Продажа</div>
+            <div className={`font-medium ${getPriceChangeClass(priceUpdate, 'sellPrice')}`}>
+              {formatPrice(item.sellPrice)}
+            </div>
+          </div>
+          <div>
+            <div className="text-white/50">Мин. цена</div>
+            <div className={`font-medium ${getPriceChangeClass(priceUpdate, 'absoluteMinUnitPrice')}`}>
+              {formatPrice(item.absoluteMinUnitPrice)}
+            </div>
+          </div>
+          {item.lastUpdated && (
+            <div className="col-span-3 text-white/40 text-xs">
+              Обновлено: {new Date(item.lastUpdated).toLocaleString('ru-RU')}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ItemCard({ item, onStatusToggle, priceUpdate, notifications }) {
+      const [isToggling, setIsToggling] = useState(false);
+      const [lastError, setLastError] = useState(null);
+      
+      const handleToggle = async () => {
+        if (isToggling) return;
+        
+        setIsToggling(true);
+        setLastError(null);
+        
+        try {
+          await onStatusToggle(item.id, !item.enabled);
+          notifications.showSuccess(
+            'Статус изменен',
+            `${item.displayName} ${!item.enabled ? 'включен' : 'отключен'}`
+          );
+        } catch (error) {
+          setLastError(error.message);
+          notifications.showError(
+            'Ошибка изменения статуса',
+            `Не удалось ${!item.enabled ? 'включить' : 'отключить'} ${item.displayName}: ${error.message}`
+          );
+        } finally {
+          setIsToggling(false);
+        }
+      };
+      
+      return (
+        <div className={`panel p-3 transition-colors ${
+          item.enabled ? 'border-green-400/30' : 'border-red-400/30'
+        } ${lastError ? 'border-red-500/50' : ''}`}>
+          <div className="flex items-center gap-3">
+            <ItemIcon itemName={item.name} />
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-white/90 truncate">
+                {item.displayName}
+              </div>
+              <div className="text-xs text-white/60">
+                ID: {item.id}
+              </div>
+              {lastError && (
+                <div className="text-xs text-red-400 mt-1 truncate" title={lastError}>
+                  Ошибка: {lastError}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-2 py-1 rounded ${
+                item.enabled ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+              }`}>
+                {item.enabled ? 'Включен' : 'Отключен'}
+              </span>
+              <StatusToggle 
+                enabled={item.enabled}
+                loading={isToggling}
+                onChange={handleToggle}
+                disabled={!!lastError}
+              />
+            </div>
+          </div>
+          
+          <PriceDisplay 
+            item={item}
+            priceUpdate={priceUpdate}
+          />
+          
+          {lastError && (
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                onClick={() => setLastError(null)}
+                className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+              >
+                Очистить ошибку
+              </button>
+              <button
+                onClick={handleToggle}
+                className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                disabled={isToggling}
+              >
+                Повторить
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ItemFilters({ searchTerm, onSearchChange, statusFilter, onStatusFilterChange, itemCount }) {
+      return (
+        <div className="panel p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">Фильтры</h3>
+            <span className="text-sm text-white/60">{itemCount} предметов</span>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm text-white/70 mb-1">Поиск</label>
+              <input
+                type="text"
+                className="input"
+                placeholder="Название предмета..."
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm text-white/70 mb-1">Статус</label>
+              <select
+                className="input"
+                value={statusFilter}
+                onChange={(e) => onStatusFilterChange(e.target.value)}
+              >
+                <option value="all">Все предметы</option>
+                <option value="enabled">Только включенные</option>
+                <option value="disabled">Только отключенные</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ItemManagementPanel() {
+      const [items, setItems] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [searchTerm, setSearchTerm] = useState('');
+      const [statusFilter, setStatusFilter] = useState('all');
+      const [priceUpdates, setPriceUpdates] = useState(new Map());
+      const [lastRefresh, setLastRefresh] = useState(null);
+      const [isRefreshing, setIsRefreshing] = useState(false);
+      
+      const notifications = useNotifications();
+      const isOnline = useNetworkStatus();
+      const socketRef = useRef(null);
+      const refreshIntervalRef = useRef(null);
+      
+      const filteredItems = useMemo(() => {
+        return items.filter(item => {
+          const matchesSearch = item.displayName.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+            item.searchKeyword.toLowerCase()
+            .includes(searchTerm.toLowerCase());
+          
+          const matchesStatus = statusFilter === 'all' ||
+            (statusFilter === 'enabled' && item.enabled) ||
+            (statusFilter === 'disabled' && !item.enabled);
+          
+          return matchesSearch && matchesStatus;
+        });
+      }, [items, searchTerm, statusFilter]);
+
+      const loadItems = useCallback(async (showLoadingState = true) => {
+        try {
+          if (showLoadingState) {
+            setLoading(true);
+          } else {
+            setIsRefreshing(true);
+          }
+          setError(null);
+          
+          if (!isOnline) {
+            throw new Error('Нет подключения к интернету');
+          }
+          
+          const data = await apiRequest('/api/items');
+          
+          if (data.success) {
+            setItems(data.items);
+            setLastRefresh(new Date());
+            
+            if (!showLoadingState) {
+              notifications.showSuccess('Данные обновлены', `Загружено ${data.items.length} предметов`);
+            }
+          } else {
+            throw new Error(data.error || 'Не удалось загрузить предметы');
+          }
+        } catch (err) {
+          const errorMessage = err instanceof ApiError 
+            ? `Ошибка сервера (${err.status}): ${err.message}`
+            : err.message;
+          
+          setError(errorMessage);
+          
+          if (!showLoadingState) {
+            notifications.showError('Ошибка обновления', errorMessage);
+          }
+          
+          console.error('Error loading items:', err);
+        } finally {
+          setLoading(false);
+          setIsRefreshing(false);
+        }
+      }, [isOnline, notifications]);
+
+      const handleStatusToggle = useCallback(async (itemId, enabled) => {
+        if (!isOnline) {
+          throw new Error('Нет подключения к интернету');
+        }
+        
+        const data = await apiRequest(`/api/items/${itemId}/status`, {
+          method: 'POST',
+          body: JSON.stringify({ enabled })
+        });
+        
+        if (data.success) {
+          // Update local state optimistically
+          setItems(prevItems => 
+            prevItems.map(item => 
+              item.id === itemId ? { ...item, enabled } : item
+            )
+          );
+        } else {
+          throw new Error(data.error || 'Не удалось изменить статус предмета');
+        }
+      }, [isOnline]);
+
+      const setupWebSocket = useCallback(() => {
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
+        
+        try {
+          const socket = io();
+          socketRef.current = socket;
+          
+          socket.on('connect', () => {
+            console.log('WebSocket connected');
+            notifications.showInfo('Подключение установлено', 'Обновления в реальном времени активны');
+          });
+          
+          socket.on('disconnect', (reason) => {
+            console.log('WebSocket disconnected:', reason);
+            if (reason === 'io server disconnect') {
+              notifications.showWarning('Соединение разорвано', 'Переподключение...');
+            }
+          });
+          
+          socket.on('connect_error', (error) => {
+            console.error('WebSocket connection error:', error);
+            notifications.showError('Ошибка подключения', 'Не удалось установить соединение для обновлений в реальном времени');
+          });
+          
+          // Listen for item status changes
+          socket.on('itemStatusChanged', (data) => {
+            console.log('Item status changed:', data);
+            setItems(prevItems => 
+              prevItems.map(item => 
+                item.id === data.itemId ? { ...item, enabled: data.enabled } : item
+              )
+            );
+            
+            // Show notification only if the change wasn't initiated by this client
+            const item = items.find(i => i.id === data.itemId);
+            if (item) {
+              notifications.showInfo(
+                'Статус изменен',
+                `${data.displayName} ${data.enabled ? 'включен' : 'отключен'}`
+              );
+            }
+          });
+          
+          // Listen for price updates
+          socket.on('price:broadcast', (priceData) => {
+            console.log('Price update received:', priceData);
+            
+            setItems(prevItems => 
+              prevItems.map(item => {
+                const itemPriceData = priceData[item.displayName];
+                if (itemPriceData) {
+                  // Track price changes for highlighting
+                  const oldPrice = item.buyPrice;
+                  const newPrice = itemPriceData.buyPrice;
+                  
+                  if (oldPrice !== null && newPrice !== null && oldPrice !== newPrice) {
+                    setPriceUpdates(prev => {
+                      const newMap = new Map(prev);
+                      newMap.set(item.id, {
+                        buyPrice: newPrice - oldPrice,
+                        timestamp: Date.now()
+                      });
+                      return newMap;
+                    });
+                    
+                    // Clear price update highlight after 5 seconds
+                    setTimeout(() => {
+                      setPriceUpdates(prev => {
+                        const newMap = new Map(prev);
+                        newMap.delete(item.id);
+                        return newMap;
+                      });
+                    }, 5000);
+                  }
+                  
+                  return {
+                    ...item,
+                    buyPrice: itemPriceData.buyPrice,
+                    sellPrice: itemPriceData.sellPrice,
+                    absoluteMinUnitPrice: itemPriceData.absoluteMinUnitPrice,
+                    lastUpdated: new Date(itemPriceData.timestamp)
+                  };
+                }
+                return item;
+              })
+            );
+          });
+          
+        } catch (error) {
+          console.error('Failed to setup WebSocket:', error);
+          notifications.showError('Ошибка WebSocket', 'Не удалось настроить соединение для обновлений в реальном времени');
+        }
+      }, [notifications, items]);
+
+      // Setup auto-refresh interval
+      useEffect(() => {
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+        }
+        
+        if (isOnline && !error) {
+          refreshIntervalRef.current = setInterval(() => {
+            loadItems(false); // Silent refresh
+          }, 30000); // Refresh every 30 seconds
+        }
+        
+        return () => {
+          if (refreshIntervalRef.current) {
+            clearInterval(refreshIntervalRef.current);
+          }
+        };
+      }, [isOnline, error, loadItems]);
+
+      // Initial load and WebSocket setup
+      useEffect(() => {
+        loadItems();
+        setupWebSocket();
+        
+        return () => {
+          if (socketRef.current) {
+            socketRef.current.disconnect();
+          }
+          if (refreshIntervalRef.current) {
+            clearInterval(refreshIntervalRef.current);
+          }
+        };
+      }, []);
+
+      // Handle network status changes
+      useEffect(() => {
+        if (!isOnline) {
+          notifications.showWarning('Нет подключения', 'Проверьте подключение к интернету');
+          if (refreshIntervalRef.current) {
+            clearInterval(refreshIntervalRef.current);
+          }
+        } else {
+          // Reload data when coming back online
+          if (error && error.includes('интернету')) {
+            loadItems();
+          }
+        }
+      }, [isOnline, error, loadItems, notifications]);
+
+      if (loading) {
+        return (
+          <div className="panel p-8 text-center">
+            <div className="flex items-center justify-center gap-3 text-white/60">
+              <div className="animate-spin w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full"></div>
+              <span>Загрузка предметов...</span>
+            </div>
+          </div>
+        );
+      }
+
+      if (error) {
+        return (
+          <div className="panel p-8 text-center space-y-4">
+            <div className="text-red-400 mb-4">
+              <div className="text-lg font-medium mb-2">Ошибка загрузки</div>
+              <div className="text-sm">{error}</div>
+            </div>
+            
+            <div className="flex items-center justify-center gap-3">
+              <button 
+                onClick={() => loadItems()}
+                className="btn-primary"
+                disabled={!isOnline}
+              >
+                {isOnline ? 'Попробовать снова' : 'Нет подключения'}
+              </button>
+              
+              {!isOnline && (
+                <div className="text-xs text-white/50">
+                  Проверьте подключение к интернету
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="space-y-6">
+          <NotificationContainer 
+            notifications={notifications.notifications}
+            onRemove={notifications.removeNotification}
+          />
+          
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold grad-text">Управление предметами</h2>
+            <div className="flex items-center gap-3">
+              {!isOnline && (
+                <span className="text-xs text-red-400 bg-red-500/10 px-2 py-1 rounded border border-red-400/30">
+                  Офлайн
+                </span>
+              )}
+              {lastRefresh && (
+                <span className="text-xs text-white/50">
+                  Обновлено: {lastRefresh.toLocaleTimeString('ru-RU')}
+                </span>
+              )}
+              <button 
+                onClick={() => loadItems(false)}
+                className={`btn-ghost ${isRefreshing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isRefreshing || !isOnline}
+              >
+                {isRefreshing ? (
+                  <>
+                    <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full"></div>
+                    Обновление...
+                  </>
+                ) : (
+                  <>🔄 Обновить</>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-1">
+              <ItemFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                itemCount={filteredItems.length}
+              />
+            </div>
+            
+            <div className="lg:col-span-3">
+              <div className="space-y-3">
+                {filteredItems.length === 0 ? (
+                  <div className="panel p-8 text-center">
+                    <div className="text-white/50">
+                      {searchTerm || statusFilter !== 'all' 
+                        ? 'Предметы не найдены' 
+                        : 'Нет предметов для отображения'
+                      }
+                    </div>
+                    {(searchTerm || statusFilter !== 'all') && (
+                      <button
+                        onClick={() => {
+                          setSearchTerm('');
+                          setStatusFilter('all');
+                        }}
+                        className="mt-3 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+                      >
+                        Сбросить фильтры
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  filteredItems.map(item => (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      onStatusToggle={handleStatusToggle}
+                      priceUpdate={priceUpdates.get(item.id)}
+                      notifications={notifications}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Main App Component with Navigation
+
+    function maskBalance(num, anon) {
+      const n = Number(num || 0);
+      if (!anon) return n.toLocaleString('ru-RU');
+      const s = String(Math.floor(n));
+      if (s.length <= 2) return '••';
+      return s.slice(0, 2) + '•'.repeat(Math.max(0, s.length - 2));
+    }
+
+    function KPI({ title, value, sub }) {
+      return (
+        <div className="panel kpi-card">
+          <div className="text-white/60 text-xs">{title}</div>
+          <div className="mt-1 text-2xl font-semibold">{value}</div>
+          {sub && <div className="mt-2 text-xs text-white/50">{sub}</div>}
+        </div>
+      );
+    }
+
+    function BotCard({ b, anon }) {
+      const extras = Object.entries(b)
+	.filter(([k, v]) =>
+        !['username','balance','vpsId','status','logs'].includes(k) &&
+	v != null && v !== ''
+	)
+	.map(([k, v]) => [k === 'an' ? '/an' : k, v])
+        .slice(0, 4);
+      return (
+        <div className="panel p-4 hover:border-cyan-400/30 transition">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-white/80 font-medium truncate max-w-[14rem]">{b.username || '—'}</span>
+                {b.status && <span className="tag">{b.status}</span>}
+              </div>
+              <div className="text-xs text-white/50 mt-1">VPS: {b.vpsId ?? '—'}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-white/60">Баланс</div>
+              <div className="text-lg font-semibold">{maskBalance(b.balance, anon)}</div>
+            </div>
+          </div>
+          {extras.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {extras.map(([k, v]) => (
+                <span key={k} className="tag">{k}: {String(v ?? '—')}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function App() {
+      const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' or 'items'
+      const [bots, setBots] = useState([]);
+      const [total, setTotal] = useState({ bots: 0, vps: 0, balance: 0 });
+      const [approvals, setApprovals] = useState([]);
+      const [anon, setAnon] = useState(true);
+      const [showList, setShowList] = useState(true);
+
+      const [startName, setStartName] = useState('');
+      const [trAn, setTrAn] = useState('');
+      const [trNick, setTrNick] = useState('');
+      const [trAmount, setTrAmount] = useState('');
+
+      async function loadAgents() {
+        try {
+          const res = await fetch('/api/agents');
+          const agents = await res.json();
+          let list = [];
+          let vpsSet = new Set();
+          let bal = 0;
+          agents.forEach(a => {
+            if (a?.vpsId) vpsSet.add(a.vpsId);
+            const botsArr = a?.bots?.bots || [];
+            bal += Number(a?.bots?.totalBalance || 0);
+            botsArr.forEach(b => {
+              list.push({
+                username: b.username ?? b.user ?? b.name ?? '',
+                balance: b.balance ?? b.bal ?? 0,
+                vpsId: a.vpsId ?? a.name ?? '—',
+                status: b.status ?? b.state ?? '',
+                ...b
+              });
+            });
+          });
+          setBots(list);
+          setTotal({ bots: list.length, vps: vpsSet.size, balance: bal });
+        } catch (e) {
+          console.error('agents failed', e);
+        }
+      }
+
+      async function loadApprovals() {
+        try {
+          const res = await fetch('/api/approvals');
+          const list = await res.json();
+          setApprovals(Array.isArray(list) ? list : []);
+        } catch (e) {
+          console.error('approvals failed', e);
+        }
+      }
+
+      useEffect(() => {
+        loadAgents(); loadApprovals();
+        const id = setInterval(() => { loadAgents(); loadApprovals(); }, 5000);
+        return () => clearInterval(id);
+      }, []);
+
+      useEffect(() => {
+        document.getElementById('year').textContent = new Date().getFullYear();
+        const btnAnon = document.getElementById('toggleAnon');
+        const btnList = document.getElementById('toggleList');
+        btnAnon.onclick = () => setAnon(x => !x);
+        btnList.onclick = () => setShowList(x => !x);
+      }, []);
+
+      async function startBot() {
+        const names = startName.trim();
+        if (!names) return;
+        
+        // Split by spaces and filter out empty strings
+        const usernames = names.split(/\s+/).filter(name => name.length > 0);
+        
+        if (usernames.length === 0) return;
+        
+        try {
+          // Start all bots in parallel
+          const promises = usernames.map(username => 
+            fetch('/api/start', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username })
+            })
+          );
+          
+          await Promise.all(promises);
+          setStartName('');
+          loadAgents();
+          alert(`Запущено ${usernames.length} ботов: ${usernames.join(', ')}`);
+        } catch (e) {
+          alert('Не удалось запустить ботов');
+        }
+      }
+
+      async function sendTransfer() {
+        const an = trAn.trim();
+        const recipient = trNick.trim();
+        const amount = parseInt(trAmount, 10);
+        if (!(an && recipient && amount)) return;
+        try {
+          const res = await fetch('/api/transfer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ an, recipient, amount })
+          });
+          const data = await res.json().catch(() => null);
+          if (!res.ok) throw new Error(data?.error || 'Transfer failed');
+          setTrAn(''); setTrNick(''); setTrAmount('');
+          alert('Перевод запланирован');
+        } catch (e) {
+          alert(e.message || 'Ошибка перевода');
+        }
+      }
+
+      async function approve(id) {
+        try {
+          await fetch('/api/approve', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+          });
+          loadApprovals();
+        } catch (e) {
+          alert('Не удалось одобрить');
+        }
+      }
+
+      return (
+        <div className="space-y-8">
+          {/* Navigation Tabs */}
+          <div className="flex space-x-1 bg-white/5 p-1 rounded-xl">
+            <button
+              onClick={() => setCurrentView('dashboard')}
+              className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                currentView === 'dashboard'
+                  ? 'bg-cyan-600 text-white'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              📊 Панель управления
+            </button>
+            <button
+              onClick={() => setCurrentView('items')}
+              className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                currentView === 'items'
+                  ? 'bg-cyan-600 text-white'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              🎯 Управление предметами
+            </button>
+          </div>
+
+          {/* Content based on current view */}
+          {currentView === 'dashboard' ? (
+            <>
+              <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <KPI title="Всего ботов" value={total.bots.toLocaleString('ru-RU')} />
+                <KPI title="Суммарный баланс" value={maskBalance(total.balance, anon)} sub={anon ? "баланс скрыт" : "показывается полностью"} />
+                <KPI title="Серверов (VPS)" value={total.vps.toLocaleString('ru-RU')} />
+                <KPI title="Запросов на одобрение" value={approvals.length} />
+              </section>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <section className="lg:col-span-2 space-y-4">
+                  <div className="panel p-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-semibold">Боты</h2>
+                      <div className="text-sm text-white/60">{bots.length} шт.</div>
+                    </div>
+                    {showList ? (
+                      <div className="mt-4 grid gap-3">
+                        {bots.length === 0 && <div className="text-sm text-white/50 text-center py-8">Пока пусто…</div>}
+                        {bots.map((b, i) => <BotCard key={i} b={b} anon={anon} />)}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-white/50 py-6 text-center">Список скрыт</div>
+                    )}
+                  </div>
+                </section>
+
+                <aside className="space-y-4">
+                  <div className="panel p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">Запустить ботов</h3>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                      <input className="input" placeholder="Usernames (через пробел): nick1 nick2 nick3" value={startName} onChange={e=>setStartName(e.target.value)} />
+                      <button className="btn-primary justify-center" onClick={startBot}>Запустить всех</button>
+                    </div>
+                  </div>
+
+                  <div className="panel p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">Перевод средств</h3>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                      <input className="input" placeholder="Где (/an)" value={trAn} onChange={e=>setTrAn(e.target.value)} />
+                      <input className="input" placeholder="Кому (ник)" value={trNick} onChange={e=>setTrNick(e.target.value)} />
+                      <input className="input" placeholder="Сумма" inputMode="numeric" value={trAmount} onChange={e=>setTrAmount(e.target.value)} />
+                      <button className="btn-primary justify-center" onClick={sendTransfer}>Отправить</button>
+                    </div>
+                  </div>
+
+                  <div className="panel p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">Запросы на одобрение</h3>
+                      <span className="tag">{approvals.length}</span>
+                    </div>
+                    <div className="grid gap-2">
+                      {approvals.length === 0 && <div className="text-sm text-white/50 text-center py-4">Нет новых запросов</div>}
+                      {approvals.map((a, i) => (
+                        <div key={i} className="flex items-center justify-between gap-3 bg-white/5 rounded-xl border border-white/10 p-3">
+                          <div className="min-w-0">
+                            <div className="font-medium text-white/80 truncate">{a.username ?? a.user ?? a.nick ?? '—'}</div>
+                            <div className="text-xs text-white/50 mt-0.5">{a.id ? `#${a.id}` : ''}</div>
+                          </div>
+                          <button className="btn-primary" onClick={()=>approve(a.id)}>Одобрить</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            </>
+          ) : (
+            <ItemManagementPanel />
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('app-root')).render(<App/>);
+    document.getElementById('year').textContent = new Date().getFullYear();
+    (function bindToggles(){
+    })();
+  </script>
+</body>
+</html>

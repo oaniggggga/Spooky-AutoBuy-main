@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Дешевые предметы",
+    "description": "Предметы до 1000 монет - высокий процент прибыли",
+    "minPrice": 0,
+    "maxPrice": 1000,
+    "buyMultiplier": 0.75,
+    "sellMultiplier": 1
+  },
+  {
+    "name": "Средние предметы",
+    "description": "Предметы 1000-10000 монет - умеренная прибыль",
+    "minPrice": 1000,
+    "maxPrice": 10000,
+    "buyMultiplier": 0.75,
+    "sellMultiplier": 1
+  },
+  {
+    "name": "Дорогие предметы",
+    "description": "Предметы 10000-100000 монет - стабильная прибыль",
+    "minPrice": 10000,
+    "maxPrice": 100000,
+    "buyMultiplier": 0.75,
+    "sellMultiplier": 0.95
+  },
+  {
+    "name": "Очень дорогие предметы",
+    "description": "Предметы 100000-1000000 монет - консервативная торговля",
+    "minPrice": 100000,
+    "maxPrice": 1000000,
+    "buyMultiplier": 0.75,
+    "sellMultiplier": 0.95
+  },
+  {
+    "name": "Элитные предметы",
+    "description": "Предметы свыше 1000000 монет - минимальный риск",
+    "minPrice": 1000000,
+    "maxPrice": null,
+    "buyMultiplier": 0.75,
+    "sellMultiplier": 0.95
+  }
+]
